@@ -1,15 +1,16 @@
+from sklearn.model_selection import train_test_split
+import tensorflow as tf
 import cv2
 import numpy as np
 import os
 import sys
-import tensorflow as tf
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
-from sklearn.model_selection import train_test_split
 
 EPOCHS = 10
 IMG_WIDTH = 30
 IMG_HEIGHT = 30
-NUM_CATEGORIES = 43
+NUM_CATEGORIES = 3
 TEST_SIZE = 0.4
 
 
@@ -58,7 +59,22 @@ def load_data(data_dir):
     be a list of integer labels, representing the categories for each of the
     corresponding `images`.
     """
-    raise NotImplementedError
+    """
+    Loop through all the specific folder labels and generate directory to each subfolder
+    """
+    images = []
+    labels = []
+    for label in range(NUM_CATEGORIES):
+        subfolder_path = os.path.join(data_dir, str(label))
+        for filename in os.listdir(subfolder_path):
+            img = cv2.imread(os.path.join(subfolder_path, filename))
+            if img is not None:
+                res = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT))
+                images.append(res)
+                labels.append(int(label))
+            else:
+                raise ValueError
+    return (images, labels)
 
 
 def get_model():
@@ -67,7 +83,36 @@ def get_model():
     `input_shape` of the first layer is `(IMG_WIDTH, IMG_HEIGHT, 3)`.
     The output layer should have `NUM_CATEGORIES` units, one for each category.
     """
-    raise NotImplementedError
+    # create the convolutional neural network
+    model = tf.keras.models.Sequential([
+        # First Layer
+        tf.keras.layers.Conv2D(32, 3, activation='relu', input_shape=(IMG_WIDTH, IMG_HEIGHT, 3)),
+        tf.keras.layers.MaxPooling2D(pool_size=2),
+
+        # second layer
+        tf.keras.layers.Conv2D(64, 3, activation='relu', input_shape=(IMG_WIDTH, IMG_HEIGHT, 3)),
+        tf.keras.layers.MaxPooling2D(pool_size=2),
+
+        # third layer
+        tf.keras.layers.Conv2D(128, 3, activation='relu', input_shape=(IMG_WIDTH, IMG_HEIGHT, 3)),
+        tf.keras.layers.MaxPooling2D(pool_size=2),
+
+        # Flattening layer
+        tf.keras.layers.Flatten(),
+
+        # Add hidden layer and droputs
+        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dropout(0.5),
+
+        # Output. Multi-class classification (mutually exclusive)
+        tf.keras.layers.Dense(NUM_CATEGORIES, activation='softmax')
+    ])
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+        loss='categorical_crossentropy',
+        metrics=['accuracy', 'top_k_categorical_accuracy'])
+
+    return model
 
 
 if __name__ == "__main__":

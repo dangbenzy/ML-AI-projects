@@ -101,7 +101,9 @@ class NimAI():
         Return the Q-value for the state `state` and the action `action`.
         If no Q-value exists yet in `self.q`, return 0.
         """
-        
+        if (tuple(state), action) in self.q:
+            return self.q[tuple(state), action]
+        return 0
 
 
     def update_q_value(self, state, action, old_q, reward, future_rewards):
@@ -120,8 +122,7 @@ class NimAI():
         is the sum of the current reward and estimated future rewards.
         """
         Q= old_q + self.alpha*((reward + future_rewards) - old_q)
-        self.q[(state, action)]= Q
-        raise NotImplementedError
+        self.q[tuple(state), action]= Q
 
     def best_future_reward(self, state):
         """
@@ -133,19 +134,15 @@ class NimAI():
         Q-value in `self.q`. If there are no available actions in
         `state`, return 0.
         """
-        actions = Nim.available_actions(state)
-        if len(actions) == 0:
+        actions= Nim.available_actions(state)
+        if len(actions)== 0:
             return 0
-        max_q = float('-inf')
+        reward = 0
         for action in actions:
-            q_value = self.get_q_value(state, action)
-            if q_value > max_q:
-                max_q = q_value
-        if max_q == float('-inf'):
-            return 0
-        return max_q    
-        
-        raise NotImplementedError
+            if (tuple(state), action) in self.q:
+                reward = max(reward, self.q[tuple(state), action])
+        return reward
+
 
     def choose_action(self, state, epsilon=True):
         """
@@ -162,8 +159,27 @@ class NimAI():
         If multiple actions have the same Q-value, any of those
         options is an acceptable return value.
         """
-        raise NotImplementedError
+        actions= Nim.available_actions(state)
+        reward= 0
+        for action in actions:
+            reward = max(reward, self.get_q_value(state, action))
+        if reward == 0:
+            Q= random.choice(list(actions))
+        else:
+            for key, value in (self.q).items():
+                if value == reward:
+                    Q= key
 
+        if epsilon == False:
+            return Q[1]
+
+        else:
+
+            options = [random.choice(list(actions)), Q[1]]
+            probabilities = [self.epsilon , (1- self.epsilon)]
+
+            choice = random.choices(options, weights=probabilities, k=1)[0]
+            return choice
 
 def train(n):
     """
@@ -278,3 +294,10 @@ def play(ai, human_player=None):
             winner = "Human" if game.winner == human_player else "AI"
             print(f"Winner is {winner}")
             return
+
+def main():
+    ai = train(10000)
+    play(ai)
+
+if __name__ == "__main__":
+    main()

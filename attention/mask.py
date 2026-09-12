@@ -1,8 +1,8 @@
 import sys
 import tensorflow as tf
-import PIL
 from PIL import Image, ImageDraw, ImageFont
 from transformers import AutoTokenizer, TFBertForMaskedLM
+import numpy
 
 # Pre-trained masked language model
 MODEL = "bert-base-uncased"
@@ -46,19 +46,24 @@ def get_mask_token_index(mask_token_id, inputs):
     `None` if not present in the `inputs`.
     """
     try:
-        index= (inputs.input_ids).index(mask_token_id)
+        index_ids_list = (inputs.input_ids).numpy().tolist()
+        index = index_ids_list[0].index(mask_token_id)
     except ValueError:
         return None
     return index
+
 
 def get_color_for_attention_score(attention_score):
     """
     Return a tuple of three integers representing a shade of gray for the
     given `attention_score`. Each value should be in the range [0, 255].
     """
-    color= round(attention_score * 255)
-    return (color, color, color)
+    # Convert TensorFlow tensor to Python scalar if needed
+    if isinstance(attention_score, tf.Tensor):
+        attention_score = attention_score.numpy().item()
 
+    color = round(attention_score * 255)
+    return (color, color, color)
 
 
 def visualize_attentions(tokens, attentions):

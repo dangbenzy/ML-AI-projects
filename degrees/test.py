@@ -88,17 +88,16 @@ def shortest_path(source, target):
     """
     Returns the shortest list of (movie_id, person_id) pairs
     that connect the source to the target.
-
-    If no possible path, returns None.
     """
+    # Each queue item is a tuple: (current_person, path_so_far)
     frontier = [(source, [])]
     explored = set()
 
     while frontier:
-        current_person, path = frontier.pop(0)
+        current_person, path = frontier.pop(0)  # BFS uses FIFO
 
         if current_person == target:
-            return path
+            return path  # Return ONLY the correct path
 
         explored.add(current_person)
 
@@ -108,6 +107,7 @@ def shortest_path(source, target):
                 frontier.append((neighbor, new_path))
 
     return None
+
     # TODO
     raise NotImplementedError
 
